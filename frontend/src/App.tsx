@@ -11,7 +11,7 @@ import { api } from './services/api';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  // const [token, setToken] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -29,7 +29,7 @@ const App: React.FC = () => {
   //   setAuthMode('none');
   //   localStorage.setItem('aura_cloud_user', JSON.stringify(newUser));
   // };
-  const handleSignup = async (credentials: { email: string; password: string;name:string }) => {
+  const handleSignup = async (credentials: { email: string; password: string; name: string }) => {
     try {
       const res = await api.signup(credentials); // { user, token } from backend
       const newUser: User = {
@@ -39,7 +39,7 @@ const App: React.FC = () => {
         token: res.token
       };
       setUser(newUser);
-      setToken(res.token);
+      // setToken(res.token);
       setAuthMode('none'); // hide signup/login forms
     } catch (err: any) {
       alert(err.message);
@@ -56,7 +56,7 @@ const App: React.FC = () => {
         token: data.token
       };
       setUser(loggedInUser);
-      setToken(data.token);
+      // setToken(data.token);
       setAuthMode('none');
     } catch (err: any) {
       alert(err.message);
@@ -69,7 +69,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
-    setToken(null);
+    // setToken(null);
   };
 
   const handleUploadSuccess = () => {
