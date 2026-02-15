@@ -18,8 +18,8 @@ const BASE_URL =
   // Vite style env var first
   (import.meta as any)?.env?.VITE_API_BASE_URL ||
   // fallback for other setups
-  (typeof import.meta.env.VITE_API_BASE_URL !== "undefined" ? (import.meta.env.VITE_API_BASE_URL  as string) : "") ||
-  "http://localhost:3000";
+  (typeof import.meta.env.VITE_API_BASE_URL !== "undefined" ? (import.meta.env.VITE_API_BASE_URL as string) : "") ||
+  "http://localhost:3000/api";
 
 function buildUrl(path: string) {
   // supports passing "/api/files" or full URL
@@ -44,18 +44,18 @@ export const api = {
     opts?: {
       token?: string;
       body?: any;
-      signal?: AbortSignal;
+      // signal?: AbortSignal;
       timeoutMs?: number;
       headers?: Record<string, string>;
     }
   ): Promise<T> {
-    const { token, body, signal, timeoutMs = 15000, headers = {} } = opts || {};
+    const { token, body, headers = {} } = opts || {};
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
+    // const controller = new AbortController();
+    // const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    console.log("Build URL", buildUrl(path));
     // if caller passed a signal, we should respect it too
-    const combinedSignal = signal ?? controller.signal;
+    // const combinedSignal = signal;
 
     try {
       const res = await fetch(buildUrl(path), {
@@ -66,8 +66,8 @@ export const api = {
           ...headers,
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
-        signal: combinedSignal,
-        credentials: "include", // enables cookie-based auth/refresh if you use it
+
+        // credentials: "include", // enables cookie-based auth/refresh if you use it
       });
 
       const data = await safeParseJson(res);
@@ -87,15 +87,16 @@ export const api = {
       }
       if (err instanceof ApiError) throw err;
       throw new ApiError(err?.message || "Network error", 0);
-    } finally {
-      clearTimeout(timeout);
     }
+    //finally {
+    //   clearTimeout(timeout);
+    // }
   },
 
   get<T>(path: string, token?: string) {
     return api.request<T>("GET", path, { token });
   },
- 
+
   post<T>(path: string, body?: any, token?: string) {
     return api.request<T>("POST", path, { token, body });
   },
@@ -106,5 +107,13 @@ export const api = {
 
   delete<T>(path: string, token?: string) {
     return api.request<T>("DELETE", path, { token });
+  },
+
+  async login(credentials: any) {
+    return api.post<any>("/auth/login", credentials);
+  },
+
+  async signup(data: any) {
+    return api.post<any>("/auth/signup", data);
   },
 };

@@ -7,9 +7,11 @@ import Layout from './components/Layout';
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import LandingPage from './pages/LandingPage';
+import { api } from './services/api';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<'none' | 'login' | 'signup'>('none');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -22,15 +24,52 @@ const App: React.FC = () => {
     setIsAuthLoading(false);
   }, []);
 
-  const handleLogin = (newUser: User) => {
-    setUser(newUser);
-    setAuthMode('none');
-    localStorage.setItem('aura_cloud_user', JSON.stringify(newUser));
+  // const handleLogin = (newUser: User) => {
+  //   setUser(newUser);
+  //   setAuthMode('none');
+  //   localStorage.setItem('aura_cloud_user', JSON.stringify(newUser));
+  // };
+  const handleSignup = async (credentials: { email: string; password: string;name:string }) => {
+    try {
+      const res = await api.signup(credentials); // { user, token } from backend
+      const newUser: User = {
+        id: res.user.id,
+        name: res.user.name,
+        email: res.user.email,
+        token: res.token
+      };
+      setUser(newUser);
+      setToken(res.token);
+      setAuthMode('none'); // hide signup/login forms
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
+
+  const handleLogin = async (credentials: { email: string; password: string }) => {
+    try {
+      const data = await api.login(credentials);
+      const loggedInUser: User = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        token: data.token
+      };
+      setUser(loggedInUser);
+      setToken(data.token);
+      setAuthMode('none');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+  // const handleLogout = () => {
+  //   setUser(null);
+  //   localStorage.removeItem('aura_cloud_user');
+  // };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('aura_cloud_user');
+    setToken(null);
   };
 
   const handleUploadSuccess = () => {
@@ -47,22 +86,25 @@ const App: React.FC = () => {
 
   // Marketing Landing State
   if (!user && authMode === 'none') {
-    return <LandingPage onStart={() => setAuthMode('login')} />;
+    return <LandingPage
+      onLoginStart={() => setAuthMode('login')}
+      onSignUpStart={() => setAuthMode('signup')}
+    />;
   }
 
   // Authentication State (with Header)
   if (!user && (authMode === 'login' || authMode === 'signup')) {
     return (
-      <Layout user={null} onLogout={() => {}}>
+      <Layout user={null} onLogout={() => { }}>
         {authMode === 'login' ? (
-          <Login 
-            onLogin={handleLogin} 
-            onSwitchToSignup={() => setAuthMode('signup')} 
+          <Login
+            onLogin={handleLogin}
+            onSwitchToSignup={() => setAuthMode('signup')}
           />
         ) : (
-          <Signup 
-            onSignup={handleLogin} 
-            onSwitchToLogin={() => setAuthMode('login')} 
+          <Signup
+            onSignup={handleSignup}
+            onSwitchToLogin={() => setAuthMode('login')}
           />
         )}
       </Layout>
@@ -77,7 +119,7 @@ const App: React.FC = () => {
           Infra Status: Active
         </div>
         <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Command Console</h1>
-        <p className="text-slate-400 font-bold uppercase text-[11px] tracking-[0.3em] mt-3">Identity Signature: {user?.id.toUpperCase()}</p>
+        <p className="text-slate-400 font-bold uppercase text-[11px] tracking-[0.3em] mt-3">Identity Signature: {user?.name}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

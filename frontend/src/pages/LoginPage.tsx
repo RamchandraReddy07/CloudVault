@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import type { User } from '../types/types';
+
 
 interface LoginProps {
-  onLogin: (user: User) => void;
+  onLogin: (credentials: { email: string; password: string }) => Promise<void>;
   onSwitchToSignup: () => void;
 }
 
@@ -11,20 +11,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToSignup }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      const userId = 'user-' + btoa(email).slice(0, 8);
-      const mockUser: User = {
-        id: userId,
-        email: email,
-        token: 'mock-jwt-token-' + userId // Simple token embedding userId for simulation
-      };
-      onLogin(mockUser);
+    setError(null);
+    try {
+      await onLogin({ email, password });
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -41,6 +40,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToSignup }) => {
               <h2 className="text-4xl font-black text-slate-900 tracking-tight">Access CloudVault</h2>
               <p className="text-slate-400 text-sm mt-3 font-bold uppercase tracking-widest">Enter Credentials</p>
             </div>
+
+            {error && (
+              <div className="mb-8 p-4 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-rose-100 flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm">!</span>
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-3">
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Identity Matrix</label>

@@ -1,20 +1,20 @@
-
 import React, { useState } from 'react';
-import type { User } from '../types/types';
+
 
 interface SignupProps {
-  onSignup: (user: User) => void;
+  onSignup: (credentials: { email: string; password: string; name: string }) => Promise<void>;
   onSwitchToLogin: () => void;
 }
 
 const Signup: React.FC<SignupProps> = ({ onSignup, onSwitchToLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -24,17 +24,13 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onSwitchToLogin }) => {
     }
 
     setLoading(true);
-    // Simulate API registration delay
-    setTimeout(() => {
-      const userId = 'user-' + btoa(email).slice(0, 8);
-      const mockUser: User = {
-        id: userId,
-        email: email,
-        token: 'mock-jwt-token-' + userId
-      };
-      onSignup(mockUser);
+    try {
+      await onSignup({ email, password, name });
+    } catch (err: any) {
+      setError(err.message || 'Signup failed');
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -68,7 +64,16 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onSwitchToLogin }) => {
                   className="w-full px-7 py-4 bg-white border border-slate-100 rounded-3xl focus:ring-4 focus:ring-sky-500/5 focus:border-sky-500 outline-none transition-all text-slate-900 font-bold"
                 />
               </div>
-              
+
+              <div className="space-y-2.5">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Identity Matrix (Name)</label>
+                <input
+                  type="name" required value={name} onChange={(e) => setName(e.target.value)}
+                  placeholder="John"
+                  className="w-full px-7 py-4 bg-white border border-slate-100 rounded-3xl focus:ring-4 focus:ring-sky-500/5 focus:border-sky-500 outline-none transition-all text-slate-900 font-bold"
+                />
+              </div>
+
               <div className="space-y-2.5">
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] ml-2">Security Key</label>
                 <input

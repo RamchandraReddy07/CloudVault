@@ -2,11 +2,19 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { prisma } from "./lib/prisma";
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: "http://localhost:5173", // <-- your frontend URL
+  credentials: true, // if you need to send cookies or auth headers
+}));
+
 app.use(express.json());
 
 type FileStatus = "CREATED" | "UPLOADED" | "PROCESSING" | "COMPLETED";
@@ -31,8 +39,8 @@ type CreateFileRequest = {
 };
 
 type PresignParams = {
-    fileId: string;
-  };
+  fileId: string;
+};
 // --------------------
 // In-memory "DB"
 // --------------------
@@ -55,25 +63,105 @@ const db = {
 // Expect: Authorization: Bearer token-<userId>
 // Example: Bearer token-123
 // --------------------
-function auth(req: Request, res: Response, next: NextFunction) {
+
+
+
+// --------------------
+// Auth Middleware
+// --------------------
+interface AuthRequest extends Request {
+  userId?: number;
+}
+
+function auth(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
   const token = header.split(" ")[1];
-  const parts = token.split("-");
-  const userId = parts[1];
 
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
-
-  (req as any).userId = userId;
-  next();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret") as { userId: number };
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
 }
 
-function getUserId(req: Request) {
-  return (req as any).userId as string;
+function getUserId(req: AuthRequest) {
+  return req.userId as number;
 }
+
+// --------------------
+// Auth Endpoints
+// --------------------
+app.get('/', (req, res) => {
+  res.send('Server is running!');
+});
+
+
+app.post("/api/auth/signup", async (req: Request, res: Response) => {
+  const { email, password, name } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+      },
+    });
+
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || "default_secret", {
+      expiresIn: "1h",
+    });
+
+    res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.post("/api/auth/login", async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || "default_secret", {
+      expiresIn: "1h",
+    });
+
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // --------------------
 // Health check
@@ -88,7 +176,17 @@ app.get("/health", (_req, res) => {
 // body: { filename, contentType, size }
 // --------------------
 app.post("/api/files", auth, (req: Request, res: Response) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req as AuthRequest);
+  // Implementation for file creation...
+  // Since we switched to Prisma for Auth, we should ideally use Prisma for Files too, 
+  // but preserving the mock in-memory store logic for files as requested to only implement JWT login.
+  // For file operations, we will continue to use the mock store but keyed by the numeric userId from Prisma converted to string temporarily for compatibility or just cast it.
+
+  // Re-using the mock store logic requires `userId` to be string.
+  // The `auth` middleware now sets `req.userId` as number (from Prisma).
+  // We'll cast it to string for the mock store interaction.
+  const userIdStr = String(userId);
+
   const { filename, contentType, size } = req.body as CreateFileRequest;
 
   if (!filename || !contentType || typeof size !== "number") {
@@ -100,7 +198,7 @@ app.post("/api/files", auth, (req: Request, res: Response) => {
 
   const file: FileRecord = {
     fileId,
-    userId,
+    userId: userIdStr,
     filename,
     contentType,
     size,
@@ -118,10 +216,15 @@ app.post("/api/files", auth, (req: Request, res: Response) => {
 // POST /api/files/:fileId/presign-upload
 // --------------------
 app.post("/api/files/:fileId/presign-upload", auth, (req: Request<PresignParams>, res: Response) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req as AuthRequest);
   const { fileId } = req.params;
 
-  const file = db.findById(userId, fileId);
+  // Re-using the mock store logic requires `userId` to be string.
+  // The `auth` middleware now sets `req.userId` as number (from Prisma).
+  // We'll cast it to string for the mock store interaction.
+  const userIdStr = String(userId);
+
+  const file = db.findById(userIdStr, fileId);
   if (!file) return res.status(404).json({ error: "File Not Found" });
 
   const s3Key = `uploads/${userId}/${fileId}/${file.filename}`;
@@ -141,10 +244,15 @@ app.post("/api/files/:fileId/presign-upload", auth, (req: Request<PresignParams>
 // POST /api/files/:fileId/complete
 // --------------------
 app.post("/api/files/:fileId/complete", auth, (req: Request<PresignParams>, res: Response) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req as AuthRequest);
   const { fileId } = req.params;
 
-  const file = db.findById(userId, fileId);
+  // Re-using the mock store logic requires `userId` to be string.
+  // The `auth` middleware now sets `req.userId` as number (from Prisma).
+  // We'll cast it to string for the mock store interaction.
+  const userIdStr = String(userId);
+
+  const file = db.findById(userIdStr, fileId);
   if (!file) return res.status(404).json({ error: "File Not Found" });
 
   file.status = "UPLOADED";
@@ -152,7 +260,7 @@ app.post("/api/files/:fileId/complete", auth, (req: Request<PresignParams>, res:
   db.update(file);
 
   // simulate background processing
-  triggerWorker(userId, fileId);
+  triggerWorker(userIdStr, fileId);
 
   res.json({ status: file.status });
 });
@@ -162,8 +270,8 @@ app.post("/api/files/:fileId/complete", auth, (req: Request<PresignParams>, res:
 // GET /api/files
 // --------------------
 app.get("/api/files", auth, (req: Request, res: Response) => {
-  const userId = getUserId(req);
-  res.json(db.find(userId));
+  const userId = getUserId(req as AuthRequest);
+  res.json(db.find(String(userId)));
 });
 
 // --------------------
@@ -171,10 +279,15 @@ app.get("/api/files", auth, (req: Request, res: Response) => {
 // GET /api/files/:fileId/download?type=original|processed
 // --------------------
 app.get("/api/files/:fileId/download", auth, (req: Request<PresignParams>, res: Response) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req as AuthRequest);
   const { fileId } = req.params;
 
-  const file = db.findById(userId, fileId);
+  // Re-using the mock store logic requires `userId` to be string.
+  // The `auth` middleware now sets `req.userId` as number (from Prisma).
+  // We'll cast it to string for the mock store interaction.
+  const userIdStr = String(userId);
+
+  const file = db.findById(userIdStr, fileId);
   if (!file) return res.status(404).json({ error: "File Not Found" });
 
   const type = (req.query.type as string) || "original";

@@ -25,9 +25,10 @@ export const FileStatus = {
   }
   
   export interface User {
-    id: string;
+    id: number;
+    name: string;
     email: string;
-    token: string;
+    token:string;
   }
   
   export interface CreateFileRequest {

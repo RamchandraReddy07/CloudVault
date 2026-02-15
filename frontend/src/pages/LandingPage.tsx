@@ -2,7 +2,8 @@
 import React from 'react';
 
 interface LandingPageProps {
-  onStart: () => void;
+  onLoginStart: () => void;
+  onSignUpStart: () => void;
 }
 
 const AuraIllustration = () => (
@@ -17,10 +18,10 @@ const AuraIllustration = () => (
         <feComposite in="SourceGraphic" in2="blur" operator="over" />
       </filter>
     </defs>
-    
+
     {/* Base Floating Platform */}
     <ellipse cx="400" cy="450" rx="300" ry="60" fill="#f1f5f9" opacity="0.4" />
-    
+
     {/* Data Streams */}
     <g className="animate-pulse" style={{ animationDuration: '3s' }}>
       <path d="M400,300 L600,150 M400,300 L200,150 M400,300 L400,100" stroke="#e2e8f0" strokeWidth="2" strokeDasharray="10 5" fill="none" />
@@ -54,7 +55,7 @@ const AuraIllustration = () => (
   </svg>
 );
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLoginStart, onSignUpStart }) => {
   return (
     <div className="bg-white min-h-screen selection:bg-sky-100 selection:text-sky-900">
       {/* Navbar Minimal */}
@@ -73,9 +74,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <a href="#" className="hover:text-sky-600 transition-colors">Enterprise</a>
         </div>
 
-        <button onClick={onStart} className="px-6 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-sky-600 transition-all shadow-xl shadow-slate-200">
-          Sign In
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={onSignUpStart} className="px-6 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-sky-600 transition-all shadow-xl shadow-slate-200">
+            Sign Up
+          </button>
+
+          <button onClick={onLoginStart} className="px-6 py-3 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-sky-600 transition-all shadow-xl shadow-slate-200">
+            Sign In
+          </button>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -87,29 +94,29 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 v2.0 Infrastructure Ready
               </div>
-              
+
               <h1 className="text-6xl md:text-8xl font-extrabold text-slate-900 tracking-tight mb-10 leading-[0.95]">
                 Breathe light <br />
                 <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-600 to-emerald-500">
                   into your data.
                 </span>
               </h1>
-              
+
               <p className="text-xl text-slate-500 max-w-lg mb-14 leading-relaxed font-medium">
-                CloudVault is a specialized file engine for the next generation of web applications. 
+                CloudVault is a specialized file engine for the next generation of web applications.
                 Move assets directly to S3 with lightning-fast async processing.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row items-center gap-5">
                 <button
-                  onClick={onStart}
+                  onClick={onLoginStart}
                   className="px-10 py-6 bg-sky-600 text-white font-black rounded-2xl shadow-2xl shadow-sky-200 hover:bg-sky-700 hover:-translate-y-1 transition-all w-full sm:w-auto text-lg tracking-tight"
                 >
                   Create Your Console
                 </button>
                 <div className="flex items-center gap-4 px-8 py-6 bg-slate-50 rounded-2xl border border-slate-100 group cursor-pointer hover:bg-white hover:shadow-xl transition-all">
                   <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-sky-600 shadow-sm">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" /></svg>
                   </span>
                   <span className="text-slate-900 font-bold tracking-tight">System Walkthrough</span>
                 </div>
