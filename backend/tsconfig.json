@@ -4,6 +4,10 @@
         "moduleResolution": "bundler",
         "target": "ES2023",
         "outDir": "./dist",
+        "rootDirs": [
+            "src",
+            "generated"
+        ],
         "strict": true,
         "esModuleInterop": true
     },

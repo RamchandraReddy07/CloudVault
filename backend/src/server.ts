@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { prisma } from "./lib/prisma";
+import { prisma } from "./lib/prisma.js";
 
 dotenv.config();
 
