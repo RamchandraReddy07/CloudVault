@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173", // <-- your frontend URL
+  origin: process.env.FRONTEND_URL || "http://localhost:5173", // <-- your frontend URL
   credentials: true, // if you need to send cookies or auth headers
 }));
 
@@ -328,7 +328,11 @@ async function triggerWorker(userId: string, fileId: string) {
 // --------------------
 // Start
 // --------------------
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const PORT = Number(process.env.PORT) || 4000;
+// app.listen(PORT, () => {
+//   console.log(`API running on http://localhost:${PORT}`);
+// });
+
 app.listen(PORT, () => {
-  console.log(`API running on http://localhost:${PORT}`);
+  console.log(`API is running on port ${PORT}`);
 });

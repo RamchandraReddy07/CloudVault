@@ -29,7 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, children }) => {
           {user && (
             <div className="flex items-center gap-8">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-sm font-black text-slate-900 tracking-tight">{user.email}</span>
+                <span className="text-sm font-black text-slate-900 tracking-tight">{user.name}</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[9px] text-emerald-600 font-black uppercase tracking-widest px-2 py-0.5 bg-emerald-50 rounded-md">Live Session</span>
                 </div>
