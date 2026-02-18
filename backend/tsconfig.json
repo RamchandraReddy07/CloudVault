@@ -3,7 +3,12 @@
         "module": "ESNext",
         "moduleResolution": "bundler",
         "target": "ES2023",
+        "outDir": "./dist",
         "strict": true,
-        "esModuleInterop": true,
-    }
+        "esModuleInterop": true
+    },
+    "include": [
+        "src/**/*",
+        "generated/prisma/**/*"
+    ]
 }
